@@ -76,6 +76,7 @@ const assignManager = {
     async deleteContainer(userContextId) {
       const sitesByContainer = await this.getByContainer(userContextId);
       this.area.remove(Object.keys(sitesByContainer));
+      identityState.storageArea.remove(backgroundLogic.cookieStoreId(userContextId));
     },
 
     async getByContainer(userContextId) {
