@@ -3,6 +3,7 @@ if (!process.listenerCount("unhandledRejection")) {
   process.on("unhandledRejection", r => console.log(r));
 }
 
+const fs = require("fs");
 const path = require("path");
 const chai = require("chai");
 const sinonChai = require("sinon-chai");
@@ -70,15 +71,29 @@ const buildPopupDom = popup => {
   });
 };
 
-const buildConfirmPage = async (url) => {
-  console.log(url)
-  const webExtension = await webExtensionsJSDOM
+
+const buildConfirmPage = async (url, browser) => {
+  const confirmPage = await webExtensionsJSDOM
     .fromFile(path.join(__dirname, "../src/confirm-page.html"), {
       apiFake: true,
-      jsdom: {url}
+      jsdom: {
+        url,
+        resources: undefined,
+      }
     });
+  
+  if (browser) {
+    confirmPage.browser = confirmPage.window.browser = browser;
+    confirmPage.browser.runtime.sendMessage.callsFake((...args) => {
+      browser.runtime.onMessage.addListener.yield(...args);
+    });
+  }
 
-  return webExtension;
+  confirmPage.window.eval(fs.readFileSync(path.join(__dirname, "../src/js/utils.js")).toString());
+  confirmPage.window.eval(fs.readFileSync(path.join(__dirname, "../src/js/confirm-page.js")).toString());
+  await nextTick();
+
+  return confirmPage;
 };
 
 const initializeWithTab = async (details = {

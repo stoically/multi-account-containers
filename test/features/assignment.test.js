@@ -91,18 +91,18 @@ describe("Assignment Comfirm Page Feature", function () {
         // click confirm page to always open in container
         const confirmPage = await buildConfirmPage("moz-extension://fake/confirm-page.html?" + 
           `url=${encodeURIComponent(url)}` +
-          `&cookieStoreId=${this.webExt.tab.cookieStoreId}`);
+          `&cookieStoreId=${this.webExt.tab.cookieStoreId}`, this.webExt.browser);
 
-        confirmPage.browser.runtime.sendMessage.callsFake((...args) => {
-          this.webExt.browser.runtime.onMessage.addListener.yield(...args);
-        });
-        await confirmPage.document.getElementById("never-ask").click();
-        await confirmPage.document.getElementById("confirm").click();
+        confirmPage.document.getElementById("never-ask").click();
+        const event = new confirmPage.window.Event("submit");
+        event.explicitOriginalTarget = confirmPage.document.getElementById("confirm");
+        confirmPage.document.getElementById("redirect-form").dispatchEvent(event);
       });
 
       describe("open new Tab with url set to 'never ask' ", function () {
         beforeEach(async function () {
         // new Tab trying to open url in default container
+          this.webExt.background.browser.tabs.create.resetHistory();
           await this.webExt.background.browser.tabs._create({
             cookieStoreId: "firefox-default",
             url
